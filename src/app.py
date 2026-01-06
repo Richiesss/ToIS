@@ -5,6 +5,34 @@ import sys
 import os
 import time
 
+# Streamlit Cloud 対策: LD_LIBRARY_PATH の設定 (import cupy の前に行う)
+# venv 環境やインストール先から nvidia ライブラリを探してパスに追加する
+try:
+    # site-packages の場所を探す (簡易的な方法)
+    import site
+    site_packages = site.getsitepackages()
+    nvidia_paths = []
+    for sp in site_packages:
+        nvidia_dir = os.path.join(sp, 'nvidia')
+        if os.path.exists(nvidia_dir):
+            # nvidia 以下の各ディレクトリ内の lib を探す
+            for lib_name in os.listdir(nvidia_dir):
+                lib_path = os.path.join(nvidia_dir, lib_name, 'lib')
+                if os.path.exists(lib_path):
+                    nvidia_paths.append(lib_path)
+    
+    if nvidia_paths:
+        new_ld_path = ':'.join(nvidia_paths)
+        if 'LD_LIBRARY_PATH' in os.environ:
+             os.environ['LD_LIBRARY_PATH'] = new_ld_path + ':' + os.environ['LD_LIBRARY_PATH']
+        else:
+             os.environ['LD_LIBRARY_PATH'] = new_ld_path
+        
+        # 確認用 (ログに出力)
+        print(f"Updated LD_LIBRARY_PATH for Streamlit Cloud: {os.environ['LD_LIBRARY_PATH']}")
+except Exception as e:
+    print(f"Failed to setup LD_LIBRARY_PATH: {e}")
+
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -14,8 +42,26 @@ from src.mlp.optimizers import SGD, Adam
 from src.mlp.backend import to_gpu, to_cpu # backend からインポート
 from streamlit_drawable_canvas import st_canvas
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix
 import seaborn as sns
-import japanize_matplotlib
+import matplotlib.font_manager as fm
+
+# 日本語フォント設定 (japanize-matplotlib 廃止)
+font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'NotoSansJP-Regular.ttf')
+if os.path.exists(font_path):
+    fp = fm.FontProperties(fname=font_path)
+    plt.rcParams['font.family'] = fp.get_name()
+    # seaborn にも適用 (matplotlib の設定を引き継ぐはずだが念のため)
+    sns.set(font=fp.get_name())
+    # 登録しておく
+    fm.fontManager.addfont(font_path)
+else:
+    # フォントファイルがない場合は、システムフォントから日本語っぽいものを探す (フォールバック)
+    print("Warning: NotoSansJP-Regular.ttf not found. Trying fallback.")
+    try:
+        import japanize_matplotlib
+    except ImportError:
+        pass
 
 st.set_page_config(page_title="MLP スクラッチ実装", layout="wide")
 
@@ -269,7 +315,7 @@ elif page == "推論 (Inference)":
                 fig, ax = plt.subplots(figsize=(6, 4))
                 ax.bar(range(10), probs)
                 ax.set_xticks(range(10))
-                ax.set_title("確率分布")
+                ax.set_title("確率分布", fontproperties=fp)
                 st.pyplot(fig)
         else:
             st.warning("キャンバスに何か書いてください。")
@@ -298,8 +344,8 @@ elif page == "評価 (Evaluation)":
             
             fig, ax = plt.subplots(figsize=(10, 8))
             sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-            ax.set_xlabel('予測ラベル (Predicted)')
-            ax.set_ylabel('正解ラベル (True)')
+            ax.set_xlabel('予測ラベル (Predicted)', fontproperties=fp)
+            ax.set_ylabel('正解ラベル (True)', fontproperties=fp)
             st.pyplot(fig)
             
             st.write(f"テスト精度: {np.mean(y_test == y_pred):.4f}")

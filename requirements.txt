@@ -5,7 +5,7 @@ streamlit
 scikit-learn
 streamlit-drawable-canvas
 seaborn
-japanize-matplotlib
+seaborn
 cupy-cuda12x
 nvidia-cublas-cu12
 nvidia-cusolver-cu12
