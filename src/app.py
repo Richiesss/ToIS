@@ -47,15 +47,21 @@ import seaborn as sns
 import matplotlib.font_manager as fm
 
 # 日本語フォント設定 (japanize-matplotlib 廃止)
-font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'NotoSansJP-Regular.ttf')
-if os.path.exists(font_path):
-    fp = fm.FontProperties(fname=font_path)
-    plt.rcParams['font.family'] = fp.get_name()
-    # seaborn にも適用 (matplotlib の設定を引き継ぐはずだが念のため)
-    sns.set(font=fp.get_name())
-    # 登録しておく
-    fm.fontManager.addfont(font_path)
-else:
+# 優先順位: ローカルのIPAexGothic -> ローカルのNotoSansJP -> システムフォント
+font_files = [
+    os.path.join(os.path.dirname(__file__), 'fonts', 'IPAexGothic.ttf'),
+    os.path.join(os.path.dirname(__file__), 'fonts', 'NotoSansJP-Regular.ttf'),
+]
+fp = None
+for f in font_files:
+    if os.path.exists(f):
+        fp = fm.FontProperties(fname=f)
+        plt.rcParams['font.family'] = fp.get_name()
+        sns.set(font=fp.get_name())
+        fm.fontManager.addfont(f)
+        break
+
+if fp is None:
     # フォントファイルがない場合は、システムフォントから日本語っぽいものを探す (フォールバック)
     print("Warning: NotoSansJP-Regular.ttf not found. Trying fallback.")
     try:
