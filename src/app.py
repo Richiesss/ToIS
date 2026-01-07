@@ -255,8 +255,8 @@ elif page == "推論 (Inference)":
     canvas_result = st_canvas(
         fill_color="rgba(255, 165, 0, 0.3)",  # 塗りつぶし (今回は線画なのであまり影響なし)
         stroke_width=20,     # 線を少し太く
-        stroke_color="white",
-        background_color="black",
+        stroke_color="black",
+        background_color="white",
         height=280,
         width=280,
         drawing_mode="freedraw",
